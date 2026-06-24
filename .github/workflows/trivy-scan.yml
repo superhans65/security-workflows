@@ -42,7 +42,7 @@ jobs:
       # Scans the built image for OS-level and library CVEs
       # (catches vulnerabilities in the Debian Bookworm base and PHP runtime)
       - name: Trivy — image scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@master
         with:
           image-ref: '${{ inputs.image-name }}'
           format: table
@@ -54,7 +54,7 @@ jobs:
       # Scans the filesystem directly so composer.lock CVEs are caught
       # even if they aren't installed inside the container image
       - name: Trivy — filesystem scan (composer.lock PHP deps)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@master
         with:
           scan-type: fs
           scan-ref: '.'
