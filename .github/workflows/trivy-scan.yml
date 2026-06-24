@@ -1,0 +1,66 @@
+name: Trivy Security Scan
+
+on:
+  workflow_call:
+    inputs:
+      image-name:
+        description: 'Docker image name and tag to build and scan (e.g. market-hub:latest)'
+        required: true
+        type: string
+      dockerfile-path:
+        description: 'Path to Dockerfile, relative to repo root'
+        required: false
+        type: string
+        default: 'Dockerfile'
+      build-context:
+        description: 'Docker build context directory'
+        required: false
+        type: string
+        default: '.'
+      severity:
+        description: 'Comma-separated severities that cause a build failure'
+        required: false
+        type: string
+        default: 'HIGH,CRITICAL'
+
+jobs:
+  trivy-scan:
+    name: Container & Dependency Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout calling repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -f "${{ inputs.dockerfile-path }}" \
+            -t "${{ inputs.image-name }}" \
+            "${{ inputs.build-context }}"
+
+      # Scans the built image for OS-level and library CVEs
+      # (catches vulnerabilities in the Debian Bookworm base and PHP runtime)
+      - name: Trivy — image scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: '${{ inputs.image-name }}'
+          format: table
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: '${{ inputs.severity }}'
+
+      # Scans the filesystem directly so composer.lock CVEs are caught
+      # even if they aren't installed inside the container image
+      - name: Trivy — filesystem scan (composer.lock PHP deps)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: '.'
+          format: table
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: library
+          severity: '${{ inputs.severity }}'
+          scanners: vuln

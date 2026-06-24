@@ -1,0 +1,24 @@
+# Drop this file into .github/workflows/ in each of your PHP repos.
+# Adjust `image-name` to match your project.
+
+name: Security Scan
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    # Weekly on Monday 08:00 UTC — catches newly published CVEs between pushes
+    - cron: '0 8 * * 1'
+  workflow_dispatch:
+
+jobs:
+  security-scan:
+    uses: superhans65/security-workflows/.github/workflows/trivy-scan.yml@main
+    with:
+      # Use a unique tag per commit so Docker's layer cache doesn't mask new vulns
+      image-name: market-hub:${{ github.sha }}
+      # dockerfile-path: Dockerfile        # default — override if yours is elsewhere
+      # build-context: .                   # default — override if needed
+      # severity: HIGH,CRITICAL            # default — loosen to CRITICAL only if noisy
